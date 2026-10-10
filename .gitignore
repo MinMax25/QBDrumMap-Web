@@ -1,0 +1,9 @@
+node_modules/
+dist/
+tests/golden/harness/bin/
+tests/golden/harness/obj/
+tests/golden/importInputs.json
+tests/golden/midiInputs.json
+tests/golden/autoAssignInputs.json
+dist-web/
+tests/golden/harness/**/obj/

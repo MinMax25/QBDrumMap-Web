@@ -1,0 +1,26 @@
+# 検証専用のCI（デプロイしない）。型チェック・テスト・ビルドが通ることだけを確認する。
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test -- --maxWorkers=4
+      - run: npm run build
+      - run: npm run build:web
