@@ -1,11 +1,11 @@
 # QBDrumMap Web
 
 更新者：ClaudeC
-最終更新日時：2026-10-10 14:06
+最終更新日時：2026-10-10 15:08
 
 Windows版 [QBDrumMap](https://github.com/MinMax25/QBDrumMap) と `.qbd` ファイルを共有する、デスクトップブラウザ向けのドラムマップ編集・MIDI変換アプリケーションです。
 
-公開予定URL：https://minmax25.github.io/QBDrumMap-Web/ （GitHub Pages。まだ公開していません）
+公開URL：https://minmax25.github.io/QBDrumMap-Web/ （GitHub Pages）
 
 > **開発中**：機能は開発途上で、仕様が変わることがあります。
 
@@ -30,8 +30,8 @@ Windows版 [QBDrumMap](https://github.com/MinMax25/QBDrumMap) と `.qbd` ファ�
 
 - 想定：Windows の Chrome／Edge、macOS の Safari／Chrome（デスクトップ）。DAW は Studio One（Fender Studio Pro）と Cubase。
 - 対象外：モバイル最適化、サーバー・ユーザー登録・クラウド保存。
-- 検証済み：Chromium 系ブラウザでの表示・サンプル読込・自動テスト。DAW については、開発者の報告として Studio One で本アプリが変換した MIDI を読み込み、変換先 Kit 名とノート表示を確認しています。
-- 未確認：すべての Kit のノート配置、音源の再生、Cubase での読込、Safari・Firefox、実際の GitHub Pages 上の動作。完全な互換性を保証するものではありません。
+- 検証済み：Chromium 系ブラウザでの表示・サンプル読込・自動テスト、公開サイト（GitHub Pages）での起動と「サンプルを開く」。DAW については、開発者の報告として Studio One で本アプリが変換した MIDI を読み込み、変換先 Kit 名とノート表示を確認しています。
+- 未確認：すべての Kit のノート配置、音源の再生、Cubase での読込、Safari・Firefox、公開サイト上での `.qbd` の読込・保存・Export・MIDI 変換・自動復元の操作。完全な互換性を保証するものではありません。
 
 ## 注意
 
