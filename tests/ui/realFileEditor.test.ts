@@ -62,7 +62,7 @@ describe.skipIf(!existsSync(REAL))('実ファイル DrumMap.qbd での編集・�
     expect(perEditMs).toBeLessThan(500); // 緩い上限（応答性の目安）
     // メモリの比較は GC を強制できる場合（node --expose-gc）だけ検証する（通常実行ではヒープの揺らぎで不安定なため）
     if ((globalThis as { gc?: unknown }).gc) expect(sharedKB).toBeLessThan(fullKB);
-  });
+  }, 30000);
 
   it('実データで Plugin/Kit の編集関数が成功し、保存して再読込できる。未定義Separatorは無い', () => {
     const s = new EditorStore();

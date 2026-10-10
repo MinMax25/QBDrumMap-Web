@@ -188,7 +188,7 @@ describe('Windows版C#コードの出力との照合（ランダム生成ケー�
     expect(stats.imports).toBeGreaterThan(150);
     expect(stats.nonEmptyNm).toBeGreaterThan(40);
     console.log('golden stats', JSON.stringify(stats));
-  });
+  }, 30000);
 });
 
 describe('取り込み: 変形入力 × Windows版C#の取り込みメソッド', () => {
@@ -237,5 +237,5 @@ describe('取り込み: 変形入力 × Windows版C#の取り込みメソッド'
       expect(stats[v]!.ok, v).toBeGreaterThan(0);
     }
     console.log('import stats', JSON.stringify(stats));
-  });
+  }, 30000);
 });

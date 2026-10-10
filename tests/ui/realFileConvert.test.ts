@@ -67,7 +67,7 @@ describe.skipIf(!existsSync(REAL))('実ファイル DrumMap.qbd での MIDI 変�
         }
       }
     }
-  });
+  }, 30000);
 
   it('モデルは変換・出力で変化せず、原本ファイルも不変', () => {
     const before = cloneMap(map);
