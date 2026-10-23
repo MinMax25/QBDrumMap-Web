@@ -1,6 +1,6 @@
 import { normalizeIds } from './fixId';
 import {
-  APP_NAME, MODEL_VERSION, NOTE_HEADS, PLUGIN_TYPES, SEPARATORS, TECHNIQUES, VOICES,
+  APP_NAME, MODEL_VERSION, NOTE_HEADS, PLUGIN_TYPES, SEPARATORS, TECHNIQUES, VOICES, setOwn,
   type ExtraFields, type MapData,
 } from './model';
 import { ok, type Result } from './result';
@@ -18,7 +18,7 @@ const sorted = <T extends { DisplayOrder: number }>(items: readonly T[]): T[] =>
 function build(fields: Field[], extra: ExtraFields): Json {
   const o: Json = {};
   for (const [k, v, def] of fields) if (v !== def) o[k] = v;
-  for (const k of Object.keys(extra)) o[k] = extra[k];
+  for (const k of Object.keys(extra)) setOwn(o, k, extra[k]);
   return o;
 }
 

@@ -1,0 +1,9 @@
+# GitHub Actions の更新だけを週次で確認する（npm の version updates は導入しない）。
+# PR の自動マージは行わない（マージは手動）。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

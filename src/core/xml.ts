@@ -9,6 +9,9 @@ export interface XmlElement {
 
 export class XmlParseError extends Error {}
 
+/** 要素の入れ子の上限（ルート=1）。正規データは pitchlist 約2・drm 約4 で、再帰によるスタック超過を防ぐための十分な余裕を取る */
+export const XML_MAX_DEPTH = 64;
+
 const NAME_START = /[\p{L}_:]/u;
 const NAME_CHAR = /[\p{L}\p{N}_:.\-·]/u;
 
@@ -94,9 +97,11 @@ export function parseXml(input: string): XmlElement {
   skipMisc();
   if (s[i] !== '<') err('ルート要素がありません');
 
-  const parseElement = (): XmlElement => {
+  const parseElement = (depth: number): XmlElement => {
     i++; // '<'
-    const el: XmlElement = { name: readName(), attrs: {}, children: [] };
+    if (depth > XML_MAX_DEPTH) err(`要素の入れ子が深すぎます (上限 ${XML_MAX_DEPTH})`);
+    // 属性名が __proto__ などでもプロトタイプを書き換えないよう、プロトタイプなしの辞書にする
+    const el: XmlElement = { name: readName(), attrs: Object.create(null) as Record<string, string>, children: [] };
     for (;;) {
       const before = i;
       skipWs();
@@ -122,7 +127,7 @@ export function parseXml(input: string): XmlElement {
       const raw = s.slice(i + 1, e);
       if (raw.includes('<')) err('属性値に `<` は使えません');
       assertNoBareAmp(raw);
-      if (an in el.attrs) err(`属性が重複しています: ${an}`);
+      if (Object.hasOwn(el.attrs, an)) err(`属性が重複しています: ${an}`);
       el.attrs[an] = decodeEntities(raw, true);
       i = e + 1;
     }
@@ -156,12 +161,12 @@ export function parseXml(input: string): XmlElement {
         if (e < 0) err('処理命令が閉じていません');
         i = e + 2;
       } else {
-        el.children.push(parseElement());
+        el.children.push(parseElement(depth + 1));
       }
     }
   };
 
-  const root = parseElement();
+  const root = parseElement(1);
   skipMisc();
   if (i < s.length) err('ルート要素の後に余分な内容があります');
   return root;

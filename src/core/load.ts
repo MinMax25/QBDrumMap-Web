@@ -1,5 +1,5 @@
 import {
-  APP_NAME, MIDI_CHANNELS, MODEL_VERSION, NOTE_HEADS, PLUGIN_TYPES, SEPARATORS, TECHNIQUES, VOICES,
+  APP_NAME, MIDI_CHANNELS, MODEL_VERSION, NOTE_HEADS, PLUGIN_TYPES, SEPARATORS, TECHNIQUES, VOICES, setOwn,
   type Articulation, type ExtraFields, type Kit, type KitPitch, type MapData, type Part, type Plugin,
 } from './model';
 import { enumFromNumber, parseEnumText, type EnumValue } from './enums';
@@ -79,7 +79,7 @@ function readEnum<T extends string>(
 
 function extras(o: Obj, known: readonly string[]): ExtraFields {
   const e: ExtraFields = {};
-  for (const k of Object.keys(o)) if (!known.includes(k)) e[k] = o[k];
+  for (const k of Object.keys(o)) if (!known.includes(k)) setOwn(e, k, o[k]);
   return e;
 }
 

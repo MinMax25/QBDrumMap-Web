@@ -28,6 +28,14 @@ export type Voice = (typeof VOICES)[number];
 
 export type ExtraFields = Record<string, unknown>;
 
+/**
+ * 任意のキーを自身のプロパティとして代入する。`o[k] = v` は k が `__proto__` のときにプロトタイプを
+ * 書き換え（値が非オブジェクトなら無視され）キーが失われるため、Extra の読み書きではこちらを使う。
+ */
+export function setOwn(o: Record<string, unknown>, k: string, v: unknown): void {
+  Object.defineProperty(o, k, { value: v, writable: true, enumerable: true, configurable: true });
+}
+
 export interface KitPitch {
   Pitch: number;
   /** Windows版は未初期化(null)を許容し、nullの場合は保存時に省略される */
