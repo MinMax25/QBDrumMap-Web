@@ -1,8 +1,5 @@
 # QBDrumMap Web
 
-更新者：ClaudeC
-最終更新日時：2026-10-10 15:08
-
 Windows版 [QBDrumMap](https://github.com/MinMax25/QBDrumMap) と `.qbd` ファイルを共有する、デスクトップブラウザ向けのドラムマップ編集・MIDI変換アプリケーションです。
 
 公開URL：https://minmax25.github.io/QBDrumMap-Web/ （GitHub Pages）
