@@ -1,5 +1,12 @@
 # QBDrumMap Web
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
+![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178c6?logo=typescript&logoColor=white)
+![Vite 8](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
+![MUI 9](https://img.shields.io/badge/MUI-9-007fff?logo=mui&logoColor=white)
+[![CI](https://github.com/MinMax25/QBDrumMap-Web/actions/workflows/ci.yml/badge.svg)](https://github.com/MinMax25/QBDrumMap-Web/actions/workflows/ci.yml)
+
 Windows版 [QBDrumMap](https://github.com/MinMax25/QBDrumMap) と `.qbd` ファイルを共有する、デスクトップブラウザ向けのドラムマップ編集・MIDI変換アプリケーションです。
 
 公開URL：https://minmax25.github.io/QBDrumMap-Web/ （GitHub Pages）
