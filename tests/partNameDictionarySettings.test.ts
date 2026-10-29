@@ -17,13 +17,13 @@ const v3 = (dict: unknown) => JSON.stringify({
 });
 
 describe('PartNameDictionary の保存・復元・移行', () => {
-  it('保存データなし（初回）は初期7件', () => {
+  it('保存データなし（初回）は初期辞書（22件）', () => {
     const r = parseSettings(null);
     expect(r.settings.partNameDictionary).toEqual(defaultPartNameDictionary());
-    expect(r.settings.partNameDictionary).toHaveLength(7);
+    expect(r.settings.partNameDictionary).toHaveLength(22);
   });
 
-  it('version 1 から移行: 既存の設定値を保ち、theme は Dark、辞書は初期7件', () => {
+  it('version 1 から移行: 既存の設定値を保ち、theme は Dark、辞書は初期辞書', () => {
     const raw = JSON.stringify({ version: 1, settings: { useArticulation: false, useArticulationPitchName: false, convertMidiFormat: 0 } });
     expect(parseSettings(raw)).toEqual({
       status: 'restored',
@@ -31,7 +31,7 @@ describe('PartNameDictionary の保存・復元・移行', () => {
     });
   });
 
-  it('version 2 から移行: Theme・MIDI Format など既存の設定値を保ち、辞書は初期7件', () => {
+  it('version 2 から移行: Theme・MIDI Format など既存の設定値を保ち、辞書は初期辞書', () => {
     const raw = JSON.stringify({ version: 2, settings: { useArticulation: false, useArticulationPitchName: true, convertMidiFormat: 0, theme: 'light' } });
     expect(parseSettings(raw)).toEqual({
       status: 'restored',
@@ -51,7 +51,7 @@ describe('PartNameDictionary の保存・復元・移行', () => {
     expect(again).toEqual({ useArticulation: false, useArticulationPitchName: true, convertMidiFormat: 1, theme: 'light', partNameDictionary: defaultPartNameDictionary() });
   });
 
-  it('空の辞書は空のまま保存・復元する（初期7件に戻さない）', () => {
+  it('空の辞書は空のまま保存・復元する（初期辞書に戻さない）', () => {
     const st = new MemoryStorage();
     const a = new SettingsStore(st);
     a.update({ partNameDictionary: [] });

@@ -6,7 +6,8 @@ import {
 import { generateAutoAssignInputs } from './golden/autoAssignInputs';
 
 // Auto Assign の Web改善モード（既定）のテスト。Windows互換モード（mode: 'windows'）は autoAssign.test.ts と C# 照合テスト。
-// 改善は3点だけ: ①Unload / Duplicate を Separate で上書きしない ②Parts に存在しないIDを候補にしない ③ID=0 への一致を割当成功に数えない。
+// 改善は2点だけ: ①Unload / Duplicate を Separate で上書きしない ②ID=0 への一致を割当成功に数えない。
+// （Parts に存在しない ArticulationID を未割当・候補外として扱う動作は、Windows版 v2.1.0 と同じ挙動で、改善ではない）
 
 type Row = [pitch: number, name: string | null, art?: number, sep?: string | number];
 const build = (plugins: { type?: string; kits: { name: string; rows: Row[] }[] }[], parts: object[]): MapData => {
@@ -68,7 +69,7 @@ describe('Web改善 ①: 割当先が見つからない行の Unload / Duplicate
   });
 });
 
-describe('Web改善 ②: Parts に存在しない ArticulationID を候補にしない', () => {
+describe('Windows版と共通: Parts に存在しない ArticulationID を候補にしない', () => {
   const parts = [part(1, 'Kick', [[1, 'Kick'], [5, 'Kick5']])];
 
   it('存在しないIDの行はスキップして、次の候補（同じPluginの次の行、他のPlugin）を探す', () => {
@@ -77,7 +78,7 @@ describe('Web改善 ②: Parts に存在しない ArticulationID を候補にし
       { name: 'T', rows: [[36, 'Kick']] },
     ] }], parts);
     expect(rowsOf(run(m, at(0, 1)).map, 0, 1)).toEqual(['36:5:None']);
-    expect(rowsOf(run(m, at(0, 1), 'windows').map, 0, 1)).toEqual(['36:8888:None']); // 対比
+    expect(rowsOf(run(m, at(0, 1), 'windows').map, 0, 1)).toEqual(['36:5:None']); // Windows互換モードも同じ
   });
 
   it('同じPluginの候補が全て不正なら、他のPluginの有効な候補を使う', () => {
@@ -93,10 +94,10 @@ describe('Web改善 ②: Parts に存在しない ArticulationID を候補にし
     const r = run(m, at(0, 1));
     expect(rowsOf(r.map, 0, 1)).toEqual(['36:1:None']);
     expect([r.assigned, r.skipped]).toEqual([1, 0]);
-    // 辞書が無ければ見つからない
+    // 辞書が空でも、Part 名と入力名の語が一致すれば割り当てる
     const r2 = run(m, at(0, 1), undefined, []);
-    expect(rowsOf(r2.map, 0, 1)).toEqual(['36:0:Separate']);
-    expect([r2.assigned, r2.skipped]).toEqual([0, 1]);
+    expect(rowsOf(r2.map, 0, 1)).toEqual(['36:1:None']);
+    expect([r2.assigned, r2.skipped]).toEqual([1, 0]);
   });
 
   it('Duplicate / Unload の行や、ID=0 を除く有効なIDは従来どおり候補になる', () => {
@@ -105,7 +106,7 @@ describe('Web改善 ②: Parts に存在しない ArticulationID を候補にし
   });
 });
 
-describe('Web改善 ③: ID=0 の Articulation に一致しても割当成功に数えない', () => {
+describe('Web改善 ②: ID=0 の Articulation に一致しても割当成功に数えない', () => {
   const parts = [part(1, 'Kick', [[0, 'Kick']])];
 
   it('assigned に数えず skipped に数える。ArticulationID は 0 のまま、Separator は「見つからない」と同じ扱い', () => {
@@ -168,11 +169,11 @@ describe('Web改善モード: 600 入力に対する不変条件', () => {
             expect([q.ArticulationID, q.Separator]).toEqual([p.ArticulationID, p.Separator]);
             return;
           }
-          if (p.ArticulationID !== 0) {
+          if (p.ArticulationID !== 0 && validIds.has(p.ArticulationID)) {
             expect([q.ArticulationID, q.Separator], `${inp.tag} 割当済みの行は不変`).toEqual([p.ArticulationID, p.Separator]);
             return;
           }
-          if (q.ArticulationID !== 0) {
+          if (q.ArticulationID !== p.ArticulationID) {
             assigned++;
             considered++;
             expect(validIds.has(q.ArticulationID), `${inp.tag} 割り当てたIDが Parts に存在する`).toBe(true);

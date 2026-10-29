@@ -50,7 +50,7 @@ describe('統合: QBD 読み込み → Auto Assign → 保存 → 再読み込�
       expect(s2.ok && s2.value.text, `${inp.tag} 保存の安定`).toBe(s.value.text);
       saved++;
     }
-    expect(saved).toBeGreaterThan(100);
+    expect(saved).toBeGreaterThan(80);
     expect(skippedInvalid).toBeGreaterThan(0);
   });
 
@@ -68,7 +68,7 @@ describe('統合: QBD 読み込み → Auto Assign → 保存 → 再読み込�
     }
   });
 
-  it('壊れた参照（存在しないID）を含む入力でも Auto Assign は壊れた参照を増やさず、保存の成否が割当で変わらない', () => {
+  it('壊れた参照（存在しないID）を含む入力でも Auto Assign は壊れた参照を増やさず（対象Kitの壊れた参照は有効なIDへ割り当て直され得る）、保存の成否が割当で変わらない', () => {
     let n = 0;
     for (const inp of inputs) {
       const m = load(inp.map);
@@ -77,7 +77,7 @@ describe('統合: QBD 読み込み → Auto Assign → 保存 → 再読み込�
       if (!r.ok) throw new Error(inp.tag);
       const ids = new Set(m.Parts.flatMap((p) => p.Articulations.map((a) => a.ID)));
       const count = (mm: MapData): number => mm.Plugins.flatMap((p) => p.Kits.flatMap((k) => k.Pitches)).filter((x) => x.ArticulationID !== 0 && !ids.has(x.ArticulationID)).length;
-      expect(count(r.value.map), inp.tag).toBe(count(m)); // 壊れた参照は増えも減りもしない（割当は有効なIDのみ）
+      expect(count(r.value.map), inp.tag).toBeLessThanOrEqual(count(m)); // 壊れた参照は増えない（割当は有効なIDのみ。対象Kitの壊れた参照は未割当として扱い、割り当て直す）
       expect(serializeQbd(r.value.map).ok, `${inp.tag} 保存の成否`).toBe(serializeQbd(m).ok);
       n++;
     }

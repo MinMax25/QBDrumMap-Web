@@ -47,9 +47,9 @@ function setup(storage: StorageLike = new MemoryStorage()) {
 }
 
 describe('Part Name Dictionary の編集UI（Settings）', () => {
-  it('初期7件を表示する', () => {
+  it('初期辞書（22件）を表示する', () => {
     setup();
-    expect(screen.getAllByTestId(/^dictionary-row-/)).toHaveLength(7);
+    expect(screen.getAllByTestId(/^dictionary-row-/)).toHaveLength(22);
     expect((screen.getByLabelText('Canonical Name (1)') as HTMLInputElement).value).toBe('Kick');
     expect((screen.getByLabelText('Aliases (1)') as HTMLInputElement).value).toBe('Bass Drum,BD');
   });
@@ -57,10 +57,10 @@ describe('Part Name Dictionary の編集UI（Settings）', () => {
   it('追加: 空の行が末尾に増え、即時保存される。QBD の Dirty・Undo には影響しない', () => {
     const { store, storage } = setup();
     fireEvent.click(screen.getByRole('button', { name: '追加' }));
-    expect(screen.getAllByTestId(/^dictionary-row-/)).toHaveLength(8);
+    expect(screen.getAllByTestId(/^dictionary-row-/)).toHaveLength(23);
     const saved = JSON.parse(storage.getItem(SETTINGS_STORAGE_KEY)!).settings.partNameDictionary;
-    expect(saved).toHaveLength(8);
-    expect(saved[7]).toEqual({ CanonicalName: '', Aliases: '' });
+    expect(saved).toHaveLength(23);
+    expect(saved[22]).toEqual({ CanonicalName: '', Aliases: '' });
     expect(store.getSnapshot().dirty).toBe(false);
     expect(store.getSnapshot().canUndo).toBe(false);
   });
@@ -82,14 +82,14 @@ describe('Part Name Dictionary の編集UI（Settings）', () => {
   it('削除: 複数選択（Ctrl）→ 確認 → 削除。キャンセルでは変更しない', async () => {
     const { settings } = setup();
     fireEvent.click(screen.getByTestId('dictionary-row-0'));
-    fireEvent.click(screen.getByTestId('dictionary-row-2'), { ctrlKey: true });
+    fireEvent.click(screen.getByTestId('dictionary-row-3'), { ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: '選択行を削除' }));
     expect(await screen.findByText(/Part Name Alias を削除しますか？: Kick, Hi-Hat/)).toBeTruthy();
     await answer('キャンセル');
-    expect(dict(settings)).toHaveLength(7);
+    expect(dict(settings)).toHaveLength(22);
     fireEvent.click(screen.getByRole('button', { name: '選択行を削除' }));
     await answer('続行');
-    expect(dict(settings).map((e) => e.CanonicalName)).toEqual(['Snare', 'Tom', 'Ride', 'Crash', 'Cymbal']);
+    expect(dict(settings).map((e) => e.CanonicalName)).toEqual(defaultPartNameDictionary().map((e) => e.CanonicalName).filter((n) => n !== 'Kick' && n !== 'Hi-Hat'));
   });
 
   it('Delete キー: 行にフォーカスがあるときは削除の確認、入力欄の編集中は行を削除しない', async () => {
@@ -99,20 +99,20 @@ describe('Part Name Dictionary の編集UI（Settings）', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.keyDown(screen.getByTestId('dictionary-row-0'), { key: 'Delete' });
     await answer('続行');
-    expect(dict(settings)).toHaveLength(6);
+    expect(dict(settings)).toHaveLength(21);
   });
 
   it('全削除した空の辞書は、再読み込み（新しいストア）でも空のまま', async () => {
     const { storage } = setup();
     fireEvent.click(screen.getByTestId('dictionary-row-0'));
-    fireEvent.click(screen.getByTestId('dictionary-row-6'), { shiftKey: true });
+    fireEvent.click(screen.getByTestId('dictionary-row-21'), { shiftKey: true });
     fireEvent.click(screen.getByRole('button', { name: '選択行を削除' }));
     await answer('続行');
     expect(screen.queryAllByTestId(/^dictionary-row-/)).toHaveLength(0);
     expect(new SettingsStore(storage).getSnapshot().settings.partNameDictionary).toEqual([]);
   });
 
-  it('初期辞書に戻す: 確認のあと初期7件に戻す。キャンセルでは変更しない。既定値に戻す（全体）は辞書を変えない', async () => {
+  it('初期辞書に戻す: 確認のあと初期辞書に戻す。キャンセルでは変更しない。既定値に戻す（全体）は辞書を変えない', async () => {
     const { settings } = setup();
     settings.update({ partNameDictionary: [{ CanonicalName: 'X', Aliases: '' }] });
     fireEvent.click(screen.getByRole('button', { name: '初期辞書に戻す' }));

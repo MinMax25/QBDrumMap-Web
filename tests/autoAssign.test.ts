@@ -97,9 +97,18 @@ describe('Auto Assign: 割当元の優先順位', () => {
     expect(rowsOf(run(m, at(0, 2)).map, 0, 2)).toEqual([[36, 6, 'None']]);
   });
 
-  it('割当元の行は Separator や Articulation の実在を問わない（Duplicate / Unload の行、Partに無いIDも対象）', () => {
-    const m = build([{ kits: [{ name: 'X', rows: [[36, 'Kick', 8888, 'Duplicate']] }, { name: 'T', rows: [[36, 'Kick']] }] }], parts);
-    expect(rowsOf(run(m, at(0, 1)).map, 0, 1)).toEqual([[36, 8888, 'None']]);
+  it('割当元の行は Separator を問わない（Duplicate / Unload の行も対象）。Partに無いIDの行は対象外で、辞書による照合に進む', () => {
+    const m = build([{ kits: [{ name: 'X', rows: [[36, 'Kick', 5, 'Duplicate']] }, { name: 'T', rows: [[36, 'Kick']] }] }], parts);
+    expect(rowsOf(run(m, at(0, 1)).map, 0, 1)).toEqual([[36, 5, 'None']]);
+    const invalid = build([{ kits: [{ name: 'X', rows: [[36, 'Kick', 8888]] }, { name: 'T', rows: [[36, 'Kick']] }] }], parts);
+    expect(rowsOf(run(invalid, at(0, 1)).map, 0, 1)).toEqual([[36, 1, 'None']]);
+  });
+
+  it('対象Kitの行も、ArticulationID が Part に存在しなければ未割当として扱い、割り当て直す', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[36, 'Kick', 8888, 'Unload']] }] }], parts);
+    const r = run(m, at(0, 0));
+    expect(rowsOf(r.map, 0, 0)).toEqual([[36, 1, 'Unload']]);
+    expect([r.assigned, r.skipped]).toEqual([1, 0]);
   });
 
   it('割当元の行は ArticulationID=0 または名前が空白だと対象外', () => {
@@ -119,12 +128,42 @@ describe('Auto Assign: 割当元の優先順位', () => {
 });
 
 describe('Auto Assign: 辞書による照合（Part の特定・完全一致・類似度）', () => {
-  it('行の名前に含まれる最も長い辞書の名前の Part を使う（Hi-Hat と Hat、Floor Tom と Tom）', () => {
+  it('別名を正規名へ置換した語の一致で Part を選ぶ（Floor Tom → Floortom、Hat → Hi-Hat）', () => {
     const m = build([{ kits: [{ name: 'T', rows: [[42, 'Floor Tom 2'], [44, 'Pedal Hat']] }] }], [
-      part(1, 'Tom', [[10, 'Tom 1'], [11, 'Floor Tom 2']]), part(2, 'Hi-Hat', [[20, 'Hi-Hat Pedal'], [21, 'Open']]),
+      part(1, 'Floortom', [[10, 'Floortom 1'], [11, 'Floortom 2']]), part(2, 'Hi-Hat', [[20, 'Hi-Hat Pedal'], [21, 'Open']]),
     ]);
     const r = run(m, at(0, 0));
     expect(rowsOf(r.map, 0, 0)).toEqual([[42, 11, 'None'], [44, 20, 'None']]);
+  });
+
+  it('別名は語の先頭から語の終わりまで一致するときだけ置換する（Hi-Hat の Hat、Hats は置換しない）', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[42, 'Hi-Hat Closed'], [44, 'Hats']] }] }], [
+      part(1, 'Hi-Hat', [[20, 'Hi-Hat Closed'], [21, 'Hi-Hat Open']]),
+    ]);
+    const r = run(m, at(0, 0));
+    expect(rowsOf(r.map, 0, 0)).toEqual([[42, 20, 'None'], [44, 0, 'Separate']]);
+    expect(r.skipped).toBe(1);
+  });
+
+  it('入力名が長くても、Part 名の語が入力名に含まれていれば Part を特定できる。一致数が同じなら後ろの語に一致する Part を優先する', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[42, 'Hi Hat Closed Pedal']] }] }], [
+      part(1, 'Closed', [[20, 'Closed']]), part(2, 'Pedal', [[30, 'Pedal Closed'], [31, 'Pedal Open']]),
+    ]);
+    expect(rowsOf(run(m, at(0, 0)).map, 0, 0)).toEqual([[42, 30, 'None']]);
+  });
+
+  it('除外語（cowbell など）を含む名前は割り当てず、無視語（drum など）は照合から除く', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[42, 'Cowbell Kick'], [44, 'Kick Drum Center']] }] }], [KICK]);
+    const r = run(m, at(0, 0));
+    expect(rowsOf(r.map, 0, 0)).toEqual([[42, 0, 'Separate'], [44, 1, 'None']]);
+    expect([r.assigned, r.skipped]).toEqual([1, 1]);
+  });
+
+  it('語尾違い（Choked と Choke）は4文字以上の前置一致で同一視する。短い語は完全一致のみ', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[42, 'Crash Choked'], [44, 'Crash Cym Cho']] }] }], [
+      part(1, 'Crash', [[40, 'Crash'], [41, 'Crash Choke']]),
+    ]);
+    expect(rowsOf(run(m, at(0, 0)).map, 0, 0)).toEqual([[42, 41, 'None'], [44, 40, 'None']]);
   });
 
   it('Part名の比較は大文字小文字を区別しない', () => {
@@ -132,26 +171,32 @@ describe('Auto Assign: 辞書による照合（Part の特定・完全一致・�
     expect(run(m, at(0, 0)).assigned).toBe(1);
   });
 
-  it('類似度の閾値は 0.6 以上（ちょうど 0.6 は割り当てる、0.5 は割り当てない）', () => {
-    const dict = [{ CanonicalName: 'x', Aliases: '' }];
-    const parts = [part(1, 'x', [[1, 'x b c d e'], [2, 'x y z w v u']])];
-    // {x,b,c} vs {x,b,c,d,e} = 3/5 = 0.6
-    const m = build([{ kits: [{ name: 'T', rows: [[10, 'x b c']] }] }], parts);
-    expect(rowsOf(run(m, at(0, 0), dict).map, 0, 0)).toEqual([[10, 1, 'None']]);
-    // {x,b} vs {x,b,c,d} = 2/4 = 0.5
-    const m2 = build([{ kits: [{ name: 'T', rows: [[10, 'x b']] }] }], [part(1, 'x', [[1, 'x b c d']])]);
-    const r2 = run(m2, at(0, 0), dict);
+  it('Part 名の語の半数以上が入力名に含まれるときだけ、その Part とする（ちょうど 0.5 は割り当てる）', () => {
+    // 'aa bb' の語のうち 'aa' だけが一致 = 1/2 = 0.5
+    const m = build([{ kits: [{ name: 'T', rows: [[10, 'aa zz']] }] }], [part(1, 'aa bb', [[1, 'aa bb']])]);
+    expect(rowsOf(run(m, at(0, 0), []).map, 0, 0)).toEqual([[10, 1, 'None']]);
+    // 'aa bb cc' のうち 'aa' だけが一致 = 1/3
+    const m2 = build([{ kits: [{ name: 'T', rows: [[10, 'aa zz']] }] }], [part(1, 'aa bb cc', [[1, 'aa bb cc']])]);
+    const r2 = run(m2, at(0, 0), []);
     expect(rowsOf(r2.map, 0, 0)).toEqual([[10, 0, 'Separate']]);
     expect(r2.skipped).toBe(1);
   });
 
-  it('類似度が同点のときは Part 内で先の Articulation', () => {
-    const dict = [{ CanonicalName: 'x', Aliases: '' }];
-    const m = build([{ kits: [{ name: 'T', rows: [[10, 'x a b c']] }] }], [part(1, 'x', [[7, 'x a b d'], [8, 'x a b e'], [9, 'x a b c q']])]);
-    // 7: {x,a,b,c}∩{x,a,b,d}=3/5=0.6, 8: 0.6, 9: 4/5=0.8 → 9
-    expect(rowsOf(run(m, at(0, 0), dict).map, 0, 0)).toEqual([[10, 9, 'None']]);
-    const m2 = build([{ kits: [{ name: 'T', rows: [[10, 'x a b c']] }] }], [part(1, 'x', [[7, 'x a b d'], [8, 'x a b e']])]);
-    expect(rowsOf(run(m2, at(0, 0), dict).map, 0, 0)).toEqual([[10, 7, 'None']]);
+  it('数字や1文字だけの一致では Part を特定しない', () => {
+    const m = build([{ kits: [{ name: 'T', rows: [[10, 'Tom 1'], [11, 'L']] }] }], [part(1, '1', [[1, '1']]), part(2, 'L', [[2, 'L']])]);
+    const r = run(m, at(0, 0), []);
+    expect(rowsOf(r.map, 0, 0)).toEqual([[10, 0, 'Separate'], [11, 0, 'Separate']]);
+    expect(r.skipped).toBe(2);
+  });
+
+  it('Articulation は一致数が多いものを優先し、同点なら余分な語が少ないもの、それも同点なら先の Articulation', () => {
+    const arts = (list: [number, string][]) => build([{ kits: [{ name: 'T', rows: [[10, 'xx aa bb cc']] }] }], [part(1, 'xx', list)]);
+    // 一致数: 7 = 3（xx, aa, bb）、9 = 4（xx, aa, bb, cc）→ 9
+    expect(rowsOf(run(arts([[7, 'xx aa bb dd'], [8, 'xx aa bb ee'], [9, 'xx aa bb cc qq']]), at(0, 0), []).map, 0, 0)).toEqual([[10, 9, 'None']]);
+    // 一致数が同点（3）で余分な語が 1 つずつ → 先の 7
+    expect(rowsOf(run(arts([[7, 'xx aa bb dd'], [8, 'xx aa bb ee']]), at(0, 0), []).map, 0, 0)).toEqual([[10, 7, 'None']]);
+    // 一致数が同点（3）で、余分な語がないものを優先 → 8
+    expect(rowsOf(run(arts([[7, 'xx aa bb dd'], [8, 'xx aa bb']]), at(0, 0), []).map, 0, 0)).toEqual([[10, 8, 'None']]);
   });
 
   it('辞書が空なら辞書による照合は行わず、他Kitの同名だけを使う', () => {
@@ -291,13 +336,13 @@ describe('Auto Assign: 複数Kit・Plugin、順序、繰り返し', () => {
     expect(rowsOf(run(shuffled, at(0, 1)).map, 0, 1)).toEqual(rowsOf(run(m, at(0, 1)).map, 0, 1));
     // 割当元の候補の順序は配列順（DisplayOrderではない）: Plugin の配列順を入れ替えると候補が変わる
     const a = build([
-      { kits: [{ name: 'X', rows: [[36, 'Kick', 5]] }] }, { kits: [{ name: 'Y', rows: [[36, 'Kick', 6]] }] }, { kits: [{ name: 'T', rows: [[36, 'Kick']] }] },
+      { kits: [{ name: 'X', rows: [[36, 'Kick', 1]] }] }, { kits: [{ name: 'Y', rows: [[36, 'Kick', 2]] }] }, { kits: [{ name: 'T', rows: [[36, 'Kick']] }] },
     ], parts);
     const b = build([
-      { kits: [{ name: 'Y', rows: [[36, 'Kick', 6]] }] }, { kits: [{ name: 'X', rows: [[36, 'Kick', 5]] }] }, { kits: [{ name: 'T', rows: [[36, 'Kick']] }] },
+      { kits: [{ name: 'Y', rows: [[36, 'Kick', 2]] }] }, { kits: [{ name: 'X', rows: [[36, 'Kick', 1]] }] }, { kits: [{ name: 'T', rows: [[36, 'Kick']] }] },
     ], parts);
-    expect(rowsOf(run(a, at(2, 0)).map, 2, 0)).toEqual([[36, 5, 'None']]);
-    expect(rowsOf(run(b, at(2, 0)).map, 2, 0)).toEqual([[36, 6, 'None']]);
+    expect(rowsOf(run(a, at(2, 0)).map, 2, 0)).toEqual([[36, 1, 'None']]);
+    expect(rowsOf(run(b, at(2, 0)).map, 2, 0)).toEqual([[36, 2, 'None']]);
   });
 
   it('同名のKitが複数あっても、指定した位置（KitRef）のKitだけが対象', () => {
@@ -356,7 +401,7 @@ describe('Auto Assign: 空データ・不正な参照', () => {
 });
 
 describe('Auto Assign: 名前の照合は .NET の文字列規則（JS標準との違い）', () => {
-  const parts = [part(1, 'Kick', [[1, 'Kick']])];
+  const parts = [part(1, 'Kick', [[1, 'Kick'], [7, 'Other']])];
   const other = (name: string, target: string): number => {
     const m = build([{ kits: [{ name: 'X', rows: [[36, name, 7]] }, { name: 'T', rows: [[36, target]] }] }], parts);
     return rowsOf(run(m, at(0, 1), []).map, 0, 1)[0]![1];
@@ -381,9 +426,20 @@ describe('Auto Assign: 初期辞書', () => {
   it('Windows版の初期値と同じ', () => {
     expect(defaultPartNameDictionary()).toEqual([
       { CanonicalName: 'Kick', Aliases: 'Bass Drum,BD' }, { CanonicalName: 'Snare', Aliases: 'SD' },
-      { CanonicalName: 'Hi-Hat', Aliases: 'HiHat,HH,Hat' }, { CanonicalName: 'Tom', Aliases: 'Floor Tom' },
+      { CanonicalName: 'Snare Sidestick', Aliases: 'Side-Stick,Side Stick,Sidestick' },
+      { CanonicalName: 'Hi-Hat', Aliases: 'HiHat,HH,Hat' },
+      { CanonicalName: 'Floortom', Aliases: 'Floor Tom' }, { CanonicalName: 'Racktom', Aliases: 'Rack Tom' },
+      { CanonicalName: 'Floortom 1', Aliases: 'Tom Low,High Floor Tom,Hi Floor Tom' }, { CanonicalName: 'Floortom 2', Aliases: 'Low Floor Tom' },
+      { CanonicalName: 'Racktom 1', Aliases: 'Tom Mid' }, { CanonicalName: 'Racktom 2', Aliases: 'High Rack Tom,Hi Rack Tom' },
+      { CanonicalName: 'Racktom 4', Aliases: 'Low Rack Tom' }, { CanonicalName: 'Hightom 1', Aliases: 'Tom Hi,Tom High' },
+      { CanonicalName: 'Crash L', Aliases: 'High Crash' }, { CanonicalName: 'Crash R', Aliases: 'Low Crash' },
       { CanonicalName: 'Ride', Aliases: 'Ride Cymbal' }, { CanonicalName: 'Crash', Aliases: 'Crash Cymbal' },
       { CanonicalName: 'Cymbal', Aliases: '' },
+      { CanonicalName: 'Hi-Hat Open Edge 1', Aliases: 'Hi Hat Open 1/4,Hi-Hat Open 1/4' },
+      { CanonicalName: 'Hi-Hat Open Edge 2', Aliases: 'Hi Hat Open 1/2,Hi-Hat Open 1/2' },
+      { CanonicalName: 'Hi-Hat Open Edge 3', Aliases: 'Hi Hat Open 3/4,Hi-Hat Open 3/4' },
+      { CanonicalName: 'Hi-Hat Open Edge 4', Aliases: 'Hi Hat Open Loose,Hi-Hat Open Loose' },
+      { CanonicalName: 'Hi-Hat Open Edge 5', Aliases: 'Hi Hat Open Full,Hi-Hat Open Full' },
     ]);
     const a = defaultPartNameDictionary();
     a[0]!.Aliases = 'x';

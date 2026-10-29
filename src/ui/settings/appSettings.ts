@@ -27,7 +27,7 @@ export const DEFAULT_SETTINGS: AppSettings = { useArticulation: true, useArticul
 export const SETTINGS_STORAGE_KEY = 'qbdrummap-web.settings';
 /**
  * 2: 画面テーマ（theme）を追加。3: partNameDictionary を追加。
- * version 1／2 の保存データは既存の設定値を保ったまま、足りない項目（theme は dark、辞書は初期7件）を既定にして読み込む。
+ * version 1／2 の保存データは既存の設定値を保ったまま、足りない項目（theme は dark、辞書は初期辞書）を既定にして読み込む。
  */
 export const SETTINGS_SCHEMA_VERSION = 3;
 const THEME_SCHEMA_VERSION = 2;

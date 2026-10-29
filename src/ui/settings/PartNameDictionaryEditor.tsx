@@ -50,7 +50,7 @@ export function PartNameDictionaryEditor({ store, confirm }: { store: SettingsSt
   };
 
   const resetToDefault = async (): Promise<void> => {
-    if (!(await confirm('Part Name Dictionary を初期辞書（7件）に戻します。現在の内容は失われます。実行しますか？'))) return;
+    if (!(await confirm('Part Name Dictionary を初期辞書に戻します。現在の内容は失われます。実行しますか？'))) return;
     setDictionary(defaultPartNameDictionary());
     setSelected([]);
     setAnchor(null);
