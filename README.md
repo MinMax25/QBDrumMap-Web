@@ -42,6 +42,7 @@ Windows版 [QBDrumMap](https://github.com/MinMax25/QBDrumMap) と `.qbd` ファ�
 - 自動復元の保存先はブラウザ（オリジンごと）の IndexedDB です。サイトデータの削除やプライベートモードでは消えます。大切なデータは必ず `.qbd` として保存してください。
 - ダウンロードの成否（保存先への書込み完了）はブラウザから検知できません。
 - `localhost` と公開 URL では保存領域が別で、作業状態は引き継がれません。
+- Auto Assign は Windows 版 v2.1.0 と同じ照合方式です。Settings に保存済みの PartNameDictionary は自動では更新されないため、新しい初期辞書（22 件）を使うには、Settings の「初期辞書に戻す」を実行してください（現在の辞書の内容は失われます）。
 
 ## サンプルQBDについて
 

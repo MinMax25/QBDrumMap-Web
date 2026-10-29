@@ -20,7 +20,33 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+// Windows版 v2.1.0 の既定辞書（SettingService.AddDefaultPartNameDictionary）
 const DEFAULT_DICT = [
+  { CanonicalName: 'Kick', Aliases: 'Bass Drum,BD' },
+  { CanonicalName: 'Snare', Aliases: 'SD' },
+  { CanonicalName: 'Snare Sidestick', Aliases: 'Side-Stick,Side Stick,Sidestick' },
+  { CanonicalName: 'Hi-Hat', Aliases: 'HiHat,HH,Hat' },
+  { CanonicalName: 'Floortom', Aliases: 'Floor Tom' },
+  { CanonicalName: 'Racktom', Aliases: 'Rack Tom' },
+  { CanonicalName: 'Floortom 1', Aliases: 'Tom Low,High Floor Tom,Hi Floor Tom' },
+  { CanonicalName: 'Floortom 2', Aliases: 'Low Floor Tom' },
+  { CanonicalName: 'Racktom 1', Aliases: 'Tom Mid' },
+  { CanonicalName: 'Racktom 2', Aliases: 'High Rack Tom,Hi Rack Tom' },
+  { CanonicalName: 'Racktom 4', Aliases: 'Low Rack Tom' },
+  { CanonicalName: 'Hightom 1', Aliases: 'Tom Hi,Tom High' },
+  { CanonicalName: 'Crash L', Aliases: 'High Crash' },
+  { CanonicalName: 'Crash R', Aliases: 'Low Crash' },
+  { CanonicalName: 'Ride', Aliases: 'Ride Cymbal' },
+  { CanonicalName: 'Crash', Aliases: 'Crash Cymbal' },
+  { CanonicalName: 'Cymbal', Aliases: '' },
+  { CanonicalName: 'Hi-Hat Open Edge 1', Aliases: 'Hi Hat Open 1/4,Hi-Hat Open 1/4' },
+  { CanonicalName: 'Hi-Hat Open Edge 2', Aliases: 'Hi Hat Open 1/2,Hi-Hat Open 1/2' },
+  { CanonicalName: 'Hi-Hat Open Edge 3', Aliases: 'Hi Hat Open 3/4,Hi-Hat Open 3/4' },
+  { CanonicalName: 'Hi-Hat Open Edge 4', Aliases: 'Hi Hat Open Loose,Hi-Hat Open Loose' },
+  { CanonicalName: 'Hi-Hat Open Edge 5', Aliases: 'Hi Hat Open Full,Hi-Hat Open Full' },
+];
+// v2.0.0 までの旧い既定辞書（保存済みの設定に残っている辞書として扱う）
+const LEGACY_DICT = [
   { CanonicalName: 'Kick', Aliases: 'Bass Drum,BD' },
   { CanonicalName: 'Snare', Aliases: 'SD' },
   { CanonicalName: 'Hi-Hat', Aliases: 'HiHat,HH,Hat' },
@@ -48,6 +74,17 @@ const BASE_PARTS: { name: string; arts: string[] }[] = [
   { name: 'Crash', arts: ['Crash', 'Crash 2', 'Crash Edge', 'Open'] }, // "Open" は Hi-Hat とも重複
   { name: 'Cymbal', arts: ['Splash', 'China', 'Open'] },
   { name: 'Misc', arts: ['Clap', 'Cowbell', 'Tambourine', 'snare', 'KICK'] }, // 大文字小文字違いの同名
+  { name: 'Snare Sidestick', arts: ['Snare Sidestick', 'Snare Sidestick Rim'] },
+  { name: 'Floortom 1', arts: ['Floortom 1', 'Floortom 1 Rimshot'] },
+  { name: 'Floortom 2', arts: ['Floortom 2', 'Floortom 2 Rimshot'] },
+  { name: 'Racktom 1', arts: ['Racktom 1', 'Racktom 1 Rimshot'] },
+  { name: 'Racktom 2', arts: ['Racktom 2', 'Racktom 2 Rimshot'] },
+  { name: 'Racktom 4', arts: ['Racktom 4', 'Racktom 4 Rimshot'] },
+  { name: 'Hightom 1', arts: ['Hightom 1', 'Hightom 1 Rimshot'] },
+  { name: 'Crash L', arts: ['Crash L', 'Crash L Bow Tip', 'Crash L Choke'] },
+  { name: 'Crash R', arts: ['Crash R', 'Crash R Bow Tip', 'Crash R Choke'] },
+  { name: 'Hi-Hat Pedal', arts: ['Hi-Hat Pedal Closed', 'Hi-Hat Pedal Open'] },
+  { name: 'Hi-Hat Open', arts: ['Hi-Hat Open Edge 1', 'Hi-Hat Open Edge 3', 'Hi-Hat Open Edge 5'] },
 ];
 
 const NAME_POOL = [
@@ -57,6 +94,10 @@ const NAME_POOL = [
   'Closed', 'Hi-Hat (Open)', '(Snare)', 'Kick/Snare', 'Snare_Rim', 'Unknown Thing', 'Vibraslap', 'Bongo', 'Open Triangle',
   'Straße', 'STRASSE', 'スネア', 'ｽﾈｱ', 'ＨＨ', 'İ', 'ǅ', '😀 Kick', 'a\tb', '  Kick  ', 'ＫＩＣＫ', 'Kick,Snare',
   '\u0085Kick', 'Kick\u0085', '﻿Kick', 'i̇', 'ſnare', 'Snare ', 'SNARE', '\u{10400}',
+  // 実在のKitに近い名前（MT-PowerDrumKit 2 / AbbeyRoadModernDrumsWhiteKit）
+  'KICK', 'SIDE-STICK', 'TOM LOW', 'TOM MID', 'TOM HI', 'HI-HAT CLOSED', 'HI-HAT HALF OPEN', 'CRASH L', 'CRASH R CHOKED', 'RIDE BELL', 'CHOKE ALL CYMBALS',
+  'Hi Hat Closed Pedal', 'Hi Hat Open Pedal', 'Hi Hat Closed Shank', 'Hi Hat Open 1/4', 'Hi Hat Open Full', 'High Crash Cym Tip', 'Low Crash Cym Edge',
+  'Low Floor Tom Rimshot', 'High Rack Tom', 'Kick Drum Dampened', 'China Cymbal Edge', 'Snare Drum Center', 'Chopper', 'Spiral', 'Hi Hat Open Controller',
 ];
 
 export function generateAutoAssignInputs(count: number): AutoAssignInput[] {
@@ -121,7 +162,7 @@ export function generateAutoAssignInputs(count: number): AutoAssignInput[] {
 
     // 辞書: 初期値が多め
     const dr = rnd();
-    const dictionary = dr < 0.55 ? DEFAULT_DICT : dr < 0.65 ? [] : ODD_DICTS[int(ODD_DICTS.length)]!;
+    const dictionary = dr < 0.45 ? DEFAULT_DICT : dr < 0.55 ? LEGACY_DICT : dr < 0.65 ? [] : ODD_DICTS[int(ODD_DICTS.length)]!;
     inputs.push({
       map: { AppName: 'QBDrumMap', ModelVersion: '1.0.0', Plugins: plugins, Parts: parts },
       dictionary,
